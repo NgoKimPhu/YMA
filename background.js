@@ -1,5 +1,17 @@
 // Author: Ngo Kim Phu
 
+Promise.any = promises =>
+    Promise.all(promises.map(promise =>
+        promise.then(
+            val => Promise.reject(val),
+            err => Promise.resolve(err)
+        )
+    )).then(
+        errors => Promise.reject(errors),
+        val => Promise.resolve(val)
+    );
+Promise.settleIf = (bool, val) => Promise[bool ? 'resolve' : 'reject'](val);
+
 // Right-click menu
 browser.contextMenus.create({
     title: 'Check now',
@@ -24,13 +36,13 @@ function setIcon(path = 'icons/yma-48.png') {
 }
 
 function getYahooTab() {
-    return new Promise((resolve, reject) =>
-        browser.tabs.query({}).then(tabs => Promise.all(
-            tabs.filter(tab => !tab.incognito)
-                .sort((tabA, tabB) => tabB.lastAccessed - tabA.lastAccessed)
-                .map(tab => browser.tabs.sendMessage(tab.id, null)
-                    .then(found => found && resolve(tab), () => {}))
-            ).then(() => reject())));
+    return browser.tabs.query({ windowType: 'normal' })
+        .then(tabs => Promise.any(tabs
+            .filter(tab => !tab.incognito)
+            .sort((tabA, tabB) => tabB.lastAccessed - tabA.lastAccessed)
+            .map(tab => browser.tabs.sendMessage(tab.id, null)
+                .then(found => Promise.settleIf(found, tab)))
+        ));
 }
 
 // Open Yahoo! mail when clicking the extension icon or the notification
@@ -39,34 +51,28 @@ function getYahooTab() {
     browser.notifications.onClicked.addListener(openYahooMail);
 })(() => {
     setBadge();
-    (createTab => {
-        // switch to a Yahoo mail tab if it exists, otherwise create one
-        getYahooTab()
-            // check that it's not closed
-            .then(tab => browser.tabs.get(tab.id)
-                // set active/focused for window and for tab
-                .then(tab => browser.windows.update(tab.windowId,
-                        { focused: true })
-                    .then(() => browser.tabs.update(tab.id, { active: true }),
-                        createTab),
-                    createTab),
-                createTab);
-    })(() => ((createWin, createTab, url) =>
-        browser.windows.getCurrent()
-            .then(win => win.incognito
-                    // open Yahoo! mail in a non-private window
-                    ? browser.windows.getAll({ windowTypes: ['normal'] })
-                        .then(wins => (
-                                wins = wins.filter(win => !win.incognito)
-                            ).length == 1
-                                // switch to the only non-private window
-                                ? (createTab({ url, windowId: wins[0].id }),
-                                    browser.windows.update(wins[0].id,
-                                        { focused: true }))
-                                // or create new window
-                                : createWin({ url }))
-                    : createTab({ url }),
-                createTab.bind({ url }))
+    // switch to a Yahoo mail tab if it exists, otherwise create one
+    (createTab => getYahooTab()
+        // check that it's not closed
+        .then(tab => browser.tabs.get(tab.id))
+        // set active/focused for window and for tab
+        .then(tab => browser.windows.update(tab.windowId, { focused: true })
+            .then(() => browser.tabs.update(tab.id, { active: true })))
+        .catch(createTab)
+    )(() => ((createWin, createTab, url) => browser.windows.getCurrent()
+        .then(win => Promise.settleIf(!win.incognito, win))
+        // open Yahoo! mail in a non-private window
+        .then(browser.windows.getAll({ windowTypes: [ 'normal' ] })
+            .then(wins => Promise.any(wins.map(win =>
+                Promise.settleIf(!win.incognito, win))))
+            // switch to the first non-private window
+            .then(({ id: windowId }) => {
+                createTab({ url, windowId })
+                browser.windows.update(windowId, { focused: true })
+            })
+            // or create new window
+            .catch(() => createWin({ url })))
+        .catch(createTab.bind({ url }))
     )(createData => browser.windows.create(createData),
         createData => browser.tabs.create(createData),
         'https://mail.yahoo.com'));
