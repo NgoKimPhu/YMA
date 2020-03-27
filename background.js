@@ -1,4 +1,5 @@
 // Author: Ngo Kim Phu
+var notify, audio, lastUnread = 0;
 
 Promise.any = promises =>
     Promise.all(promises.map(promise =>
@@ -101,7 +102,6 @@ function onAuthError() {
     setIcon('icons/loadfail.png');
 }
 
-var lastUnread = 0;
 async function check(){
     setIcon('icons/loading.png');
     let xhr = new XMLHttpRequest();
