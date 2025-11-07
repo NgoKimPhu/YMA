@@ -1,42 +1,45 @@
 {
-    "manifest_version": 2,
-    "applications": {
-        "gecko": {
-            "id": "yma@ngokimphu"
-        }
-    },
-    "name": "Yahoo! Mail Alerter",
-    "version": "1.5.1",
+  "manifest_version": 2,
+  "name": "Yahoo! Mail Alerter",
+  "version": "1.5.2",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "yma@ngokimphu",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
 
-    "description": "Alert you when new emails arrived in your Yahoo! Mail box",
+  "description": "Alert you when new emails arrived in your Yahoo! Mail box",
 
-    "icons": {
-        "48": "icons/yma-48.png"
-    },
+  "icons": {
+    "48": "icons/yma-48.png"
+  },
 
-    "browser_action": {
-        "default_icon": "icons/yma-48.png"
-    },
-    "options_ui": {
-        "page": "options.html",
-        "browser_style": true
-    },
+  "browser_action": {
+    "default_icon": "icons/yma-48.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "browser_style": true
+  },
 
-    "background": {
-        "scripts": ["background.js"]
-    },
-    "content_scripts": [
-        {
-            "matches": ["https://*.mail.yahoo.com/*"],
-            "js": ["content_script.js"],
-            "run_at": "document_start"
-        }
-    ],
-    "permissions": [
-        "storage",
-        "notifications",
-        "contextMenus",
-        "https://mail.yahoo.com/",
-        "https://login.yahoo.com/"
-    ]
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.mail.yahoo.com/*"],
+      "js": ["content_script.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "permissions": [
+    "storage",
+    "notifications",
+    "contextMenus",
+    "https://mail.yahoo.com/",
+    "https://login.yahoo.com/"
+  ]
 }
