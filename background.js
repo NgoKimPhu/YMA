@@ -81,7 +81,7 @@ function getYahooTab() {
 
 function onLoadSuccess(unread) {
   setIcon();
-  setBadge(unread+'');
+  setBadge(unread?unread+'':'');
   if (notify && unread > lastUnread) {
     audio.paused || audio.pause();
     audio.currentTime = 0;
